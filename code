@@ -1,0 +1,105 @@
+# main.py
+import os
+from dotenv import load_dotenv
+from langchain import LLMChain, PromptTemplate
+from langchain.llms import OpenAI
+import speech_recognition as sr
+from gtts import gTTS
+import pyttsx3
+
+# Load environment variables
+load_dotenv()
+OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
+
+# Initialize LLM
+llm = OpenAI(api_key=OPENAI_API_KEY, temperature=0.7)
+
+# Speech Recognition Setup
+recognizer = sr.Recognizer()
+
+# Text-to-Speech Setup
+engine = pyttsx3.init()
+
+# Function to convert text to speech
+def speak(text):
+    engine.say(text)
+    engine.runAndWait()
+
+# Function to convert speech to text
+def listen():
+    with sr.Microphone() as source:
+        print("Listening...")
+        audio = recognizer.listen(source)
+        try:
+            text = recognizer.recognize_google(audio, language="hi-IN")
+            print(f"You said: {text}")
+            return text
+        except sr.UnknownValueError:
+            print("Sorry, I could not understand the audio.")
+            return None
+        except sr.RequestError:
+            print("Sorry, there was an issue with the speech recognition service.")
+            return None
+
+# Define prompts for each scenario
+erp_prompt = PromptTemplate(
+    input_variables=["company_name"],
+    template="Namaste! Mai {company_name} se bol raha hoon. Kya aap hamare ERP system ka demo schedule kar sakte hain?"
+)
+
+interview_prompt = PromptTemplate(
+    input_variables=["candidate_name"],
+    template="Namaste {candidate_name}! Mai recruitment team se bol raha hoon. Kya aap apne experience ke baare mein thoda batayenge?"
+)
+
+payment_prompt = PromptTemplate(
+    input_variables=["customer_name"],
+    template="Namaste {customer_name}! Mai accounts team se bol raha hoon. Kya aap payment release kar sakte hain?"
+)
+
+# Create chains for each scenario
+erp_chain = LLMChain(llm=llm, prompt=erp_prompt)
+interview_chain = LLMChain(llm=llm, prompt=interview_prompt)
+payment_chain = LLMChain(llm=llm, prompt=payment_prompt)
+
+# Function to handle ERP demo scheduling
+def schedule_erp_demo():
+    company_name = "Your Company"
+    response = erp_chain.run(company_name=company_name)
+    print(f"AI: {response}")
+    speak(response)
+
+# Function to conduct candidate interviews
+def conduct_interview():
+    candidate_name = "John Doe"
+    response = interview_chain.run(candidate_name=candidate_name)
+    print(f"AI: {response}")
+    speak(response)
+
+# Function to handle payment follow-up
+def follow_up_payment():
+    customer_name = "Jane Doe"
+    response = payment_chain.run(customer_name=customer_name)
+    print(f"AI: {response}")
+    speak(response)
+
+# Main function to run the AI agent
+def main():
+    print("Welcome to the AI Cold Calling Agent!")
+    print("Choose a scenario:")
+    print("1. Schedule ERP Demo")
+    print("2. Conduct Candidate Interview")
+    print("3. Follow-up on Payment/Order")
+    choice = input("Enter your choice (1/2/3): ")
+
+    if choice == "1":
+        schedule_erp_demo()
+    elif choice == "2":
+        conduct_interview()
+    elif choice == "3":
+        follow_up_payment()
+    else:
+        print("Invalid choice. Please try again.")
+
+if __name__ == "__main__":
+    main()
